@@ -20,6 +20,7 @@ import subprocess
 import sys
 import threading
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
@@ -36,7 +37,7 @@ except ImportError:  # не Windows
 
 # ------------------------------------------------------------------ настройки
 
-CLIENT_ID = "00000000000000"
+CLIENT_ID = "00000000000000000"
 
 # Какие приложения считаем Яндекс Музыкой (часть названия, маленькими буквами).
 APP_KEYWORDS = ["ru.yandex.desktop.music"]
@@ -136,13 +137,40 @@ async def get_track():
             continue
         props = await session.try_get_media_properties_async()
         timeline = session.get_timeline_properties()
+        duration = (timeline.end_time - timeline.start_time).total_seconds()
+        position = timeline.position.total_seconds() - timeline.start_time.total_seconds()
+        position = current_position(timeline, position, duration)
         return {
             "title": props.title,
             "artist": props.artist,
-            "position": timeline.position.total_seconds(),
-            "duration": timeline.end_time.total_seconds(),
+            "position": position,
+            "duration": duration,
         }
     return None
+
+
+def current_position(timeline, position, duration):
+    """Реальная позиция трека прямо сейчас.
+
+    Windows отдаёт position как снимок на момент timeline.last_updated_time, а
+    плеер обновляет его нечасто (например, только при смене трека, паузе или
+    перемотке). Если брать position как есть, то «начало трека» (now - position)
+    каждый опрос уезжает вперёд на длину паузы между опросами, и полоска
+    в Discord сбрасывается. Поэтому прибавляем время, прошедшее с момента снимка.
+    """
+    try:
+        updated = timeline.last_updated_time
+        if updated.tzinfo is None:
+            updated = updated.replace(tzinfo=timezone.utc)
+        elapsed = (datetime.now(timezone.utc) - updated).total_seconds()
+        # мусорные значения (дата 1601 года и т.п.) и отрицательные не берём
+        if 0 < elapsed < 86400:
+            position += elapsed
+    except Exception:
+        pass
+    if duration > 0:
+        position = min(position, duration)
+    return max(position, 0.0)
 
 
 def is_gui_exe(path):
@@ -296,7 +324,7 @@ def worker(state):
                             last is None
                             or last["title"] != track["title"]
                             or last["artist"] != track["artist"]
-                            or abs(start - last["start"]) > 3  # перемотка или продолжение после паузы
+                            or abs(start - last["start"]) > 5  # перемотка (допуск гасит дрожание позиции)
                         )
                         if changed:
                             kwargs = dict(
