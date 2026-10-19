@@ -8,6 +8,9 @@ if not exist "icon.ico" (
     goto :fail
 )
 
+echo [1/3] Installing lib...
+pip install requests pypresence winrt-runtime winrt-Windows.Media.Control winrt-Windows.Foundation winrt-Windows.Foundation.Collections
+
 echo [1/3] Installing PyInstaller...
 python -m pip install --upgrade pyinstaller || goto :fail
 
