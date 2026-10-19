@@ -1,7 +1,7 @@
 <div align="center">
 
 <!-- Если появится значок, положите icon.ico рядом с README и раскомментируйте строку ниже -->
-<!-- <img src="icon.ico" width="96" alt="Discord Music Status logo" /> -->
+<img src="icon.ico" width="96" alt="Discord Music Status logo" />
 
 # Discord Music Status
 
