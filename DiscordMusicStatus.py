@@ -60,9 +60,9 @@ DEFAULT_CONFIG = {
     "preset": "",
     "presets": [
         {
-            "name": "Нервы - Нервы",
-            "title": "Нервы",
-            "artist": "Нервы",
+            "name": "Red Swan",
+            "title": "Red Swan",
+            "artist": "YOSHIKI",
             "duration": 158,
             "cover": "",
         },
